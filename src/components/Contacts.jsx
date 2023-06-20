@@ -1,39 +1,41 @@
-import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { ContactsItem } from './ContactsItem';
+import validator from 'validator';
 import { Search } from './Search';
 
 export const Contacts = prop => {
-  const [searchResults, setSearchResults] = useState({
-    results: [],
-    isSearching: false,
-  });
+  const contacts = useSelector(state => state.contacts);
+  const filter = useSelector(state => state.filter);
 
-  const showContacts = data => {
+  const showContacts = () => {
+    function searchingResults() {
+      function checkType(contact) {
+        if (validator.isNumeric(filter)) {
+          return contact.number;
+        }
+        return contact.name;
+      }
+      return contacts.filter(contact => {
+        return checkType(contact).includes(filter);
+      });
+    }
+
+    let data = '';
+    filter.length > 0 ? (data = searchingResults()) : (data = contacts);
+
     return data.length === 0 ? (
       <li>
-        No contacts{' '}
-        {searchResults.isSearching && 'found with this name or number'}
+        No contacts {filter.length > 0 && ' found with this name or number'}
       </li>
     ) : (
-      data.map(contact => (
-        <ContactsItem
-          key={contact.id}
-          contact={contact}
-          setState={prop.setState}
-          setSearchResults={setSearchResults}
-        />
-      ))
+      data.map(contact => <ContactsItem key={contact.id} contact={contact} />)
     );
   };
 
   return (
     <div>
       <h4>Contacts</h4>
-      <Search
-        state={prop.state}
-        searchResults={searchResults}
-        setSearchResults={setSearchResults}
-      />
+      <Search state={prop.state} />
       <ul
         style={{
           width: '300px',
@@ -42,11 +44,7 @@ export const Contacts = prop => {
           listStyle: 'none',
         }}
       >
-        {showContacts(
-          searchResults.isSearching === true
-            ? searchResults.results
-            : prop.state.contacts
-        )}
+        {showContacts()}
       </ul>
     </div>
   );

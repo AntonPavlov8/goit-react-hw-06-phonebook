@@ -1,56 +1,44 @@
 import { nanoid } from 'nanoid';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
+import { setContacts } from 'redux/reducer';
 import { Contacts } from './Contacts';
-export const PhoneBook = prop => {
-  const nameInput = useRef(null);
-  const telInput = useRef(null);
 
-  const { state, setState } = prop;
+export const PhoneBook = () => {
+  const dispatch = useDispatch();
+  let formRef = useRef();
+
+  const contacts = useSelector(state => state.contacts, shallowEqual);
+  const previousCountRef = useRef(contacts);
+  const isStateChanged = previousCountRef.current !== contacts;
+
+  useEffect(() => {
+    if (isStateChanged) {
+      formRef.current.reset();
+    }
+  }, [contacts, isStateChanged]);
 
   function handleSubmit(e) {
     e.preventDefault();
+    const id = nanoid();
     const form = e.currentTarget;
     const name = form.elements.name.value;
     const number = form.elements.number.value;
 
-    if (
-      state.contacts.filter(contact => {
-        return contact.name === name;
-      }).length === 0
-    ) {
-      if (
-        state.contacts.filter(contact => {
-          return contact.number === number;
-        }).length === 0
-      ) {
-        form.reset();
-        setState(prev => {
-          return {
-            ...prev,
-            contacts: [
-              ...prev.contacts,
-              {
-                id: nanoid(),
-                name: name,
-                number: number,
-              },
-            ],
-          };
-        });
-      } else {
-        alert(`Person with number ${number} is already in contacts.`);
-        telInput.current.focus();
-      }
-    } else {
-      alert(`${name} is already in contacts.`);
-      nameInput.current.focus();
-    }
+    dispatch(
+      setContacts({
+        id,
+        name,
+        number,
+      })
+    );
   }
 
   return (
     <div>
       <h2>Phonebook</h2>
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         style={{
           border: '1px #000 solid',
@@ -64,7 +52,6 @@ export const PhoneBook = prop => {
       >
         <span>Name</span>
         <input
-          ref={nameInput}
           type="text"
           name="name"
           pattern="^[a-zA-Zа-яА-Я]+(['-][a-zA-Zа-яА-Я ]*)*$"
@@ -73,7 +60,6 @@ export const PhoneBook = prop => {
         />
         <span>Number</span>
         <input
-          ref={telInput}
           type="tel"
           name="number"
           pattern="^(?:\+?\d{1,3})?\d+$"
@@ -83,7 +69,7 @@ export const PhoneBook = prop => {
 
         <button action="submit">Add contact</button>
       </form>
-      <Contacts state={state} setState={setState} />
+      <Contacts />
     </div>
   );
 };
